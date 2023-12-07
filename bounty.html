@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/video.js/dist/alt/video-js-cdn.min.css"
+    />
+    <script src="https://unpkg.com/video.js/dist/alt/video.core.min.js"></script>
+    <script src="https://unpkg.com/video.js/dist/alt/video.seek-buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/video.js/7.11.7/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/videojs-contrib-eme@3.8.0/dist/videojs-contrib-eme.js"></script>
+
+    <title>Test VideJS DRM</title>
+    <style>
+      .button-section {
+        padding: 10px;
+        margin: 5px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        cursor: pointer;
+      }
+      .button-section:hover {
+        background-color: #e6e6ff;
+      }
+
+      .vjs-seek-button-marker {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        background-color: transparant;
+        border-left: solid black;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+
+      .vjs-seek-button-marker:hover {
+        background-color: #e6e6ff;
+      }
+
+      .vjs-seek-button-marker .vjs-seek-button-section-text {
+        position: absolute;
+        padding: 4px;
+        border-radius: 10%;
+        top: -45px;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: black;
+        color: #fff;
+        font-size: 11px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .vjs-seek-button-marker:hover .vjs-seek-button-section-text {
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="margin: 50px auto">
+      <video id="my-video" class="video-js"></video>
+    </div>
+
+    <script>
+      var player = videojs(
+        "my-video",
+        {
+          controls: true,
+          fluid: true,
+          html5: {
+            vhs: {
+              overrideNative: true,
+            },
+          },
+        },
+        function () {
+          var player = this;
+          player.eme();
+          player.src({
+            src: "https://cdn.bitmovin.com/content/assets/art-of-motion_drm/mpds/11331.mpd",
+            type: "application/dash+xml",
+            keySystems: {
+              "com.widevine.alpha":
+                "https://cwip-shaka-proxy.appspot.com/no_auth",
+            },
+          });
+        }
+      );
+
+      function scrollToSection(startTime) {
+        player.currentTime(startTime);
+      }
+
+      // Sections definition
+      var sections = [
+        { start: 0, end: 30, text: "Section 1" },
+        { start: 30, end: 65, text: "Section 2" },
+        { start: 65, end: 100, text: "Section 3" },
+        { start: 100, end: 210, text: "Section 4" },
+        // Add more sections as needed
+      ];
+
+      player.on("loadedmetadata", function () {
+        // Add sections to the seekbar
+        sections.forEach(function (section) {
+          addSectionToSeekBar(section);
+          //Add section buttons
+          const body = document.body;
+          var scrollButton = document.createElement("button");
+          scrollButton.textContent = section.text;
+          scrollButton.classList.add("button-section");
+          scrollButton.addEventListener("click", function () {
+            scrollToSection(section.start);
+          });
+          body.appendChild(scrollButton);
+        });
+      });
+
+      function addSectionToSeekBar(section) {
+        var seekBar = player.controlBar.progressControl.seekBar.el();
+        var sectionMarker = document.createElement("div");
+        sectionMarker.className = "vjs-seek-button-marker";
+        sectionMarker.style.left =
+          (section.start / player.duration()) * 100 + "%";
+        sectionMarker.style.width =
+          ((section.end - section.start) / player.duration()) * 100 + "%";
+        var textElement = document.createElement("div");
+        textElement.className = "vjs-seek-button-section-text";
+        textElement.textContent = section.text;
+        sectionMarker.appendChild(textElement);
+        seekBar.appendChild(sectionMarker);
+      }
+    </script>
+  </body>
+</html>
